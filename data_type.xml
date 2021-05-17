@@ -1,22 +1,28 @@
-<test_name type=table datetime=true id=true>
-    <name></name>
-    <product></product>
-</test_name>
+<dataset>
+    <table name="test_name" datetime="True" id="True">
+        <column name="name">varchar(256)</column>
+        <column name="product">VARCHAR(256)</column>
+    </table>
 
-<Data_point type=table link=test_name id=true>
-    <Time_elapsed> </Time_elapsed>
-</Data_point>
+    <table name="Data_point" link="test_name" id="true">
+        <column name="Time_elapsed">DOUBLE</column>
+    </table>
 
-<number type=table link=Data_point type=int>
- <number></number>
- <type><type>
-</number>
+    <table name="number" link="Data_point" type="int">
+        <column name="number">INT</column>
+        <column name="type">VARCHAR(256)</column>
+    </table>
 
-<string type=table link=Data_point type=string>
-    <string></string>
-</string>
+    <table name="string" link="Data_point" type="string">
+        <column name="string">VARCHAR(4096)</column>
+    </table>
+</dataset>
 
+<!--
+<Table name datetime=true id=true link=previous_table>
+    <Data>
 
+-->
 <!-- 
 Test
     ID (inherently added, shouldn't need to mention)
