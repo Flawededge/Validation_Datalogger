@@ -1,0 +1,44 @@
+<test_name type=table datetime=true id=true>
+    <name></name>
+    <product></product>
+</test_name>
+
+<Data_point type=table link=test_name id=true>
+    <Time_elapsed> </Time_elapsed>
+</Data_point>
+
+<number type=table link=Data_point type=int>
+ <number></number>
+ <type><type>
+</number>
+
+<string type=table link=Data_point type=string>
+    <string></string>
+</string>
+
+
+<!-- 
+Test
+    ID (inherently added, shouldn't need to mention)
+    datetime (inherently added, shouldn't need to mention)
+    name
+    product
+
+Data_point
+    ID (inherently added)
+    Test_ID (inherently added)
+    Time_elapsed
+
+Number
+    ID (inherently added)
+    Data_point_id (inherently added)
+    Number
+    Type - Volts, Amps, Degrees etc.
+
+String
+    ID (inherently added)
+    Data_point_id (inherently added)
+    String 
+
+
+-->
