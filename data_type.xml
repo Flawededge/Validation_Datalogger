@@ -1,5 +1,5 @@
 <dataset>
-    <table name="test_name" datetime="True" id="True">
+    <table name="test_name" timestamp="True" id="True">
         <column name="name">varchar(256)</column>
         <column name="product">VARCHAR(256)</column>
     </table>
@@ -8,12 +8,12 @@
         <column name="Time_elapsed">DOUBLE</column>
     </table>
 
-    <table name="number" link="Data_point" type="int">
+    <table name="number" link="Data_point">
         <column name="number">INT</column>
         <column name="type">VARCHAR(256)</column>
     </table>
 
-    <table name="string" link="Data_point" type="string">
+    <table name="string" link="Data_point">
         <column name="string">VARCHAR(4096)</column>
     </table>
 </dataset>

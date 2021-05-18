@@ -6,18 +6,40 @@ from dataclasses import dataclass, field
 class table:
     """ Class for storing a table """
     name: str
-    datetime: bool
-    id: bool
+    timestamp: bool=False
+    id: bool=False
+    link: str=None
 
     columns = list("")
 
     def create_query(self):
-        pass
+        query = list("")
+        if self.id:  # If this column has an ID, add it
+            query.append("id INTEGER NOT NULL PRIMARY KEY")
+        if self.link is not None:
+            query.append(f"{self.link}_id INT NOT NULL")
+        if self.timestamp:  # If this column has a timestamp, add it
+            query.append("timestamp TIMESTAMP NOT NULL")
 
+        # Get the line to create each column
+        query += [i.make_sql_line() for i in self.columns]
+
+        if self.link is not None:
+            query.append(f"FOREIGN KEY ({self.link}_id) REFERENCES {self.link}(id)")
+
+
+
+        output = f"CREATE TABLE {self.name} (" + ','.join(query) + ");"
+        return output
+
+        
     def add_column(self, name, datatype):
+        """ Adds a column to the columns list
+        """
         self.columns.append(column(name=name, datatype=datatype))
 
     def make_query(self):
+
         [i.make_sql_line() for i in self.columns]
 
 @dataclass
@@ -42,7 +64,7 @@ class datalogger():
         self.database = database
         self.schema_file = schema_file
 
-        self.generate_schema()
+        self.schema_generate()
         self.connect()
         # self.schema_status = self.check_schema
 
@@ -51,7 +73,8 @@ class datalogger():
 
     def connect(self):
         """ Connects to the SQL server
-        """
+        TODO: Throw error when connection fails (not there for now for testing)
+        """ 
         try:
             self.connection = connect(
                 host=self.host,
@@ -65,7 +88,6 @@ class datalogger():
 
         self.connected = True
         return 0
-        
 
     def disconnect(self):
         if self.connection is not None:
@@ -85,7 +107,12 @@ class datalogger():
         if not self.connected:  # Disconnect after to clean up the connection
             self.disconnect()
 
-    def generate_schema(self):
+    def __run_query(self, query):  #TODO: Make query actually query
+        """ Actually runs the query
+        """
+        pass
+
+    def schema_generate(self):
         """ Generates a schema from the given .xml file
             ! Needs to be run each startup
         """
@@ -94,34 +121,36 @@ class datalogger():
 
         schema = []  # Clear the schema
         for cur_table in root:
-            if "datetime" in cur_table.attrib.keys() and cur_table.attrib['datetime'] == "True": 
-                datetime = True
-            else: 
-                datetime = False
+            if "timestamp" in cur_table.attrib.keys() and cur_table.attrib['timestamp'] == "True": 
+                timestamp = True
+            else:
+                timestamp = False
+
             if "id" in cur_table.attrib.keys() and cur_table.attrib['id'] == "True": 
                 id = True
-            else: 
+            else:
                 id = False
 
-            self.schema.append(table(name=cur_table.attrib["name"], datetime=datetime, id=id))
+            if "link" in cur_table.attrib.keys():
+                link = cur_table.attrib['link']
+            else:
+                link = None
+
+            self.schema.append(table(name=cur_table.attrib["name"], timestamp=timestamp, id=id, link=link))
 
             for cur_column in cur_table:
                 self.schema[-1].add_column(cur_column.attrib['name'], cur_column.text)
-        
+    
+    def schema_get_query(self):
+        # Returns a query to create each table
+        return [table.create_query() for table in self.schema]
 
 
-    def __run_query(self, query):
-        """ Actually runs the query
-        """
+
+    def schema_validate_database(self):
         pass
         
     def create_database(self):
-        pass
-    
-    def create_schema(self):
-        pass
-
-    def create_schema(self):
         pass
 
     def check_schema(self):
@@ -131,6 +160,7 @@ class datalogger():
 
 
 if __name__ == "__main__":
+    # Variable setup
     with open("credentials.txt") as file:
         cred = [i.strip() for i in file.readlines()]
         host = cred[0]
@@ -139,10 +169,14 @@ if __name__ == "__main__":
 
     database = "Test_data"
     schema_file = "data_type.xml"
+
+    # Start of the actual function stuff
     data = datalogger(
         host=host, 
         username=username, 
         password=password, 
         database=database, 
         schema_file=schema_file)
-    print(data.connection_status)
+    
+    schema = data.schema_get_query()
+    print(data.schema_validate_database())
