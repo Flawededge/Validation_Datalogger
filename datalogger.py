@@ -57,6 +57,8 @@ class column:
 class datalogger():
     connection = None
     schema = []
+    cursor = None
+
     def __init__(self, host, username, password, database, schema_file):
         self.host = host
         self.username = username
@@ -64,7 +66,7 @@ class datalogger():
         self.database = database
         self.schema_file = schema_file
 
-        self.schema_generate()
+        self.__schema_generate()
         self.connect()
         # self.schema_status = self.check_schema
 
@@ -98,21 +100,25 @@ class datalogger():
     def query(self, query):
         """ Checks if currently connected, if not connects. Then sends query
         """
-        if not self.connected:  # If not connected, then connect
-            self.connect()
+        if not self.connection.is_connected():  # If not connected, then connect
+            print("Error: Not connected to server")
+            return -1
 
         # It's connected now, so run the query
-        self.__run_query(query)
+        if self.cursor is None:
+            print("Error: No cursor")
+            return -1
 
-        if not self.connected:  # Disconnect after to clean up the connection
-            self.disconnect()
+        try:
+            self.cursor.execute(query)
+            result = self.cursor.fetchall()
+        except Error as e:
+            return e
+        
+        return result
 
-    def __run_query(self, query):  #TODO: Make query actually query
-        """ Actually runs the query
-        """
-        pass
 
-    def schema_generate(self):
+    def __schema_generate(self):
         """ Generates a schema from the given .xml file
             ! Needs to be run each startup
         """
@@ -145,17 +151,28 @@ class datalogger():
         # Returns a query to create each table
         return [table.create_query() for table in self.schema]
 
+    def schema_validate(self):
+        # SHOW COLUMNS FROM {table}
+        tables = {}
+        for table in self.schema:
+            self.cursor = self.connection.cursor()
+            result = self.query(f"SHOW COLUMNS FROM {table.name}")
 
+            if type(result) == list:
+                tables[table.name] = {i[0]:[i[1], i[2], i[3], i[4]] for i in result}
+            else:
+                tables[table.name] = result
+        self.cursor.close()
+        print(tables)
 
-    def schema_validate_database(self):
-        pass
         
-    def create_database(self):
-        pass
-
-    def check_schema(self):
-        """ Checks that the schema is valid to the .xml file
-        """
+    def schema_create(self, force=False):
+        
+        if not force:
+            question = input("Drop tables and create new ones? y/(n)") + 'n'
+            
+            if question[0] != 'y':
+                print("Schema create canceled")
         pass
 
 
@@ -167,8 +184,8 @@ if __name__ == "__main__":
         username = cred[1]
         password = cred[2]
 
-    database = "Test_data"
-    schema_file = "data_type.xml"
+    database = "test1"
+    schema_file = "schema.xml"
 
     # Start of the actual function stuff
     data = datalogger(
@@ -179,4 +196,5 @@ if __name__ == "__main__":
         schema_file=schema_file)
     
     schema = data.schema_get_query()
-    print(data.schema_validate_database())
+    print(data.schema_validate())
+    data.schema_create()
