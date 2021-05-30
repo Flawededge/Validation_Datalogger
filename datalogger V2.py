@@ -1,58 +1,7 @@
+from logging import exception
 from mysql.connector import connect, Error
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
-
-@dataclass
-class table:
-    """ Class for storing a table """
-    name: str
-    timestamp: bool=False
-    id: bool=False
-    link: str=None
-
-    columns = list("")
-
-    def create_query(self):
-        query = list("")
-        if self.id:  # If this column has an ID, add it
-            query.append("id INTEGER NOT NULL PRIMARY KEY")
-        if self.link is not None:
-            query.append(f"{self.link}_id INT NOT NULL")
-        if self.timestamp:  # If this column has a timestamp, add it
-            query.append("timestamp TIMESTAMP NOT NULL")
-
-        # Get the line to create each column
-        query += [i.make_sql_line() for i in self.columns]
-
-        if self.link is not None:
-            query.append(f"FOREIGN KEY ({self.link}_id) REFERENCES {self.link}(id)")
-
-
-
-        output = f"CREATE TABLE {self.name} (" + ','.join(query) + ");"
-        return output
-
-        
-    def add_column(self, name, datatype):
-        """ Adds a column to the columns list
-        """
-        self.columns.append(column(name=name, datatype=datatype))
-
-    def make_query(self):
-
-        [i.make_sql_line() for i in self.columns]
-
-@dataclass
-class column:
-    """ Class for storing a column """
-    name: str
-    datatype: str 
-
-    def make_sql_line(self):
-        """ Generates the SQL line to create this column
-        """
-        return f"{self.name} {self.datatype}"
-
 
 class datalogger():
     connection = None
@@ -66,11 +15,12 @@ class datalogger():
         self.database = database
         self.schema_file = schema_file
 
-        self.__schema_generate()
+        self.verify_schema()
         self.connect()
         # self.schema_status = self.check_schema
 
     def __delete__(self):
+        self.cursor.close()
         self.disconnect()
 
     def connect(self):
@@ -84,9 +34,7 @@ class datalogger():
                 password=self.password,
                 database=self.database)
         except Error as e:
-            print(e)
-            self.connected = False
-            return e.errno
+            raise Exception("Datalogger: Connection to database failed")
 
         self.connected = True
         return 0
@@ -101,13 +49,10 @@ class datalogger():
         """ Checks if currently connected, if not connects. Then sends query
         """
         if not self.connection.is_connected():  # If not connected, then connect
-            print("Error: Not connected to server")
-            return -1
+            raise Exception("Datalogger: Query failed, as there is no connection to the database")
 
         # It's connected now, so run the query
-        if self.cursor is None:
-            print("Error: No cursor")
-            return -1
+        self.cursor = self.connection.cursor()
 
         try:
             self.cursor.execute(query)
@@ -155,7 +100,6 @@ class datalogger():
         # SHOW COLUMNS FROM {table}
         tables = {}
         for table in self.schema:
-            self.cursor = self.connection.cursor()
             result = self.query(f"SHOW COLUMNS FROM {table.name}")
 
             if type(result) == list:
